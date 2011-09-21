@@ -30,6 +30,7 @@ public class AccountManagerSampleActivity extends Activity implements
     private static String sToken = null;
     private Account mAccount = null;
     private String mAuthTokenType = null;
+    private static boolean sAuthenticate = false;
     private boolean flag = false;
 
     @Override
@@ -42,7 +43,8 @@ public class AccountManagerSampleActivity extends Activity implements
         }
 
         // 認証するサービスを設定
-        setAuthTokenType(AccountManagerSampleActivity.CALENDAR);
+        setAuthTokenType(AccountManagerSampleActivity.MAIL);
+        // 起動初回フラグ
         flag = true;
     }
 
@@ -85,6 +87,7 @@ public class AccountManagerSampleActivity extends Activity implements
                     flag = false;
                     startActivity(intent);
                 } else {
+                    // 2度目の起動はせずに終了する
                     finish();
                 }
             } else {
@@ -126,6 +129,8 @@ public class AccountManagerSampleActivity extends Activity implements
                     Log.d(TAG, "The page you requested is invalid");
                     mAccountManager.invalidateAuthToken("com.google", sToken);
                 } else {
+                    // 認証に成功した
+                    sAuthenticate = true;
                     Toast.makeText(this, "Authentication Success", Toast.LENGTH_LONG).show();
                 }
             } catch (IllegalStateException e) {
@@ -136,6 +141,15 @@ public class AccountManagerSampleActivity extends Activity implements
         } else {
             Log.d(TAG, "Login failure");
         }
+    }
+
+    /**
+     * 認証できているかどうか
+     * 
+     * @return
+     */
+    public static boolean getAutheticateState() {
+        return sAuthenticate;
     }
 
     /**
