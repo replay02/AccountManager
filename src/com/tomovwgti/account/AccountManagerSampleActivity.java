@@ -20,8 +20,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
 public class AccountManagerSampleActivity extends Activity implements
@@ -30,7 +28,9 @@ public class AccountManagerSampleActivity extends Activity implements
 
     private AccountManager mAccountManager = null;
     private static String sToken = null;
+    private Account mAccount = null;
     private String mAuthTokenType = null;
+    private boolean flag = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -43,24 +43,22 @@ public class AccountManagerSampleActivity extends Activity implements
 
         // 認証するサービスを設定
         setAuthTokenType(AccountManagerSampleActivity.CALENDAR);
+        flag = true;
+    }
 
-        Button auth = (Button) findViewById(R.id.auth);
-        auth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Account[] accounts = null;
-                accounts = mAccountManager.getAccountsByType("com.google");
-                for (Account ac : accounts) {
-                    // 複数のアカウントがある場合は、複数が取れる
-                    Log.d(TAG, ac.toString());
-                }
+    @Override
+    protected void onResume() {
+        super.onResume();
 
-                // 1つめのGmailアカウントで認証する
-                AccountManagerFuture<Bundle> accountManagerFuture = mAccountManager
-                        .getAuthToken(accounts[0], mAuthTokenType, false,
-                                AccountManagerSampleActivity.this, null);
-            }
-        });
+        Account[] accounts = mAccountManager.getAccountsByType("com.google");
+        for (Account ac : accounts) {
+            // 複数のアカウントがある場合は、複数が取れる
+            Log.d(TAG, ac.toString());
+        }
+        // 1つめのGmailアカウントで認証する
+        mAccount = accounts[0];
+        AccountManagerFuture<Bundle> accountManagerFuture = mAccountManager.getAuthToken(mAccount,
+                mAuthTokenType, false, AccountManagerSampleActivity.this, null);
     }
 
     /**
@@ -72,6 +70,9 @@ public class AccountManagerSampleActivity extends Activity implements
         mAuthTokenType = type;
     }
 
+    /**
+     * 認証結果のコールバック
+     */
     @Override
     public void run(AccountManagerFuture<Bundle> data) {
         Bundle bundle;
@@ -79,11 +80,17 @@ public class AccountManagerSampleActivity extends Activity implements
             bundle = data.getResult();
             Intent intent = (Intent) bundle.get(AccountManager.KEY_INTENT);
             if (intent != null) {
-                Log.d(TAG, "User Input required");
-                startActivity(intent);
+                if (flag) {
+                    // ユーザ認証画面起動
+                    flag = false;
+                    startActivity(intent);
+                } else {
+                    finish();
+                }
             } else {
+                // トークン取得
                 sToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                Log.d(TAG, "Token = " + sToken);
+                // サービス認証
                 loginGoogle();
             }
         } catch (OperationCanceledException e) {
